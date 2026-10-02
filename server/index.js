@@ -5,7 +5,8 @@ dns.setServers(['8.8.8.8','1.1.1.1']);
 const cors=require('cors');
 const mongoose=require('mongoose');
 const app=express();
-
+const helmet=require('helmet');
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
