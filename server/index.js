@@ -17,6 +17,7 @@ app.use('/api/auth',require('./routes/authRoutes'));
 app.use('/api/expenses', require('./routes/expenseRoutes'));
 
 app.use('/api/budgets', require('./routes/budgetRoutes'));
+app.use('/api/recurring', require('./routes/recurringRoutes'));
 app.use('/api/summary', require('./routes/summaryRoutes'));
 
 app.use((req, res) => res.status(404).json({ message: 'Route not found' }));
