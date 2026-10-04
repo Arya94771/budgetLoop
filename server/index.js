@@ -14,6 +14,7 @@ app.get('/api/health',(req,res)=>{
   res.json({status:'ok'})
 })
 app.use('/api/auth',require('./routes/authRoutes'));
+app.use('/api/expenses', require('./routes/expenseRoutes'));
 
 const PORT=process.env.PORT || 5000;
 mongoose.connect(process.env.MONGO_URI)
