@@ -15,9 +15,47 @@ exports.createExpense = async (req, res) => {
   res.status(201).json(expense);
 };
 
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const SORTS = ['date', '-date', 'amount', '-amount'];
+
 exports.getExpenses = async (req, res) => {
-  const expenses = await Expense.find({ user: req.user._id }).sort({ date: -1 });
-  res.json(expenses);
+  const { category, search, from, to, minAmount, maxAmount } = req.query;
+  const sort = SORTS.includes(req.query.sort) ? req.query.sort : '-date';
+  const page = Math.max(parseInt(req.query.page) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 100);
+
+  const filter = { user: req.user._id };
+
+  if (category) filter.category = String(category);
+  if (search) filter.title = { $regex: escapeRegex(String(search)), $options: 'i' };
+
+  if (from || to) {
+    filter.date = {};
+    if (from) {
+      const start = new Date(from);
+      if (isNaN(start)) return res.status(400).json({ message: 'Invalid from date' });
+      filter.date.$gte = start;
+    }
+    if (to) {
+      const end = new Date(to);
+      if (isNaN(end)) return res.status(400).json({ message: 'Invalid to date' });
+      end.setHours(23, 59, 59, 999);
+      filter.date.$lte = end;
+    }
+  }
+
+  if (minAmount || maxAmount) {
+    filter.amount = {};
+    if (minAmount) filter.amount.$gte = Number(minAmount);
+    if (maxAmount) filter.amount.$lte = Number(maxAmount);
+  }
+
+  const [data, total] = await Promise.all([
+    Expense.find(filter).sort(sort).skip((page - 1) * limit).limit(limit),
+    Expense.countDocuments(filter),
+  ]);
+
+  res.json({ data, page, limit, total, totalPages: Math.ceil(total / limit) });
 };
 
 exports.updateExpense = async (req, res) => {
