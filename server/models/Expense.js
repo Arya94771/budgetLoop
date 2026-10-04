@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { CATEGORIES } = require('../utils/constants');
 
 const expenseSchema = new mongoose.Schema(
   {
@@ -7,7 +8,7 @@ const expenseSchema = new mongoose.Schema(
     amount: { type: Number, required: true, min: 0.01 },
     category: {
       type: String,
-      enum: ['Food', 'Travel', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Education', 'Other'],
+      enum: CATEGORIES,
       default: 'Other',
     },
     date: { type: Date, default: Date.now },

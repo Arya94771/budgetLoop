@@ -79,3 +79,19 @@ exports.deleteExpense = async (req, res) => {
   if (!expense) return res.status(404).json({ message: 'Expense not found' });
   res.json({ message: 'Deleted' });
 };
+const csvCell = (v) => {
+  let s = String(v ?? '');
+  if (/^[=+\-@]/.test(s)) s = "'" + s; // CSV injection se bachav
+  return `"${s.replace(/"/g, '""')}"`;
+};
+
+exports.exportCsv = async (req, res) => {
+  const list = await Expense.find({ user: req.user._id }).sort({ date: -1 }).lean();
+  const rows = [['Date', 'Title', 'Category', 'Amount', 'Note'].join(',')];
+  for (const e of list) {
+    rows.push([e.date.toISOString().slice(0, 10), e.title, e.category, e.amount, e.note].map(csvCell).join(','));
+  }
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="expenses.csv"');
+  res.send(rows.join('\n'));
+};
