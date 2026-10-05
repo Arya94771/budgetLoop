@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Layout from './components/Layout';
 import Expenses from './pages/Expenses';
 import Budgets from './pages/Budgets'; + <Route path="/budgets" element={<Budgets />} />
+import Recurring from './pages/Recurring'; + <Route path="/recurring" element={<Recurring />} />
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
