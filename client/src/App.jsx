@@ -4,6 +4,7 @@ import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
 import Layout from './components/Layout';
 import Expenses from './pages/Expenses';
+import Budgets from './pages/Budgets'; + <Route path="/budgets" element={<Budgets />} />
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
