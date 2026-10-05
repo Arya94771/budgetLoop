@@ -11,3 +11,6 @@ export default function Dashboard() {
     </div>
   );
 }
+export default function Dashboard() {
+  return <p className="text-slate-400">Dashboard coming up...</p>;
+}

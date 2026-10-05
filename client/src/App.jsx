@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
+import Layout from './components/Layout';
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -24,6 +25,9 @@ export default function App() {
           <Route path="/register" element={<GuestOnly><AuthPage mode="register" /></GuestOnly>} />
           <Route path="/" element={<Protected><Dashboard /></Protected>} />
           <Route path="*" element={<Navigate to="/" replace />} />
+          <Route element={<Protected><Layout /></Protected>}>
+          <Route path="/" element={<Dashboard />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </AuthProvider>
