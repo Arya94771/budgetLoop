@@ -95,7 +95,10 @@ export default function Expenses() {
         </div>
       </div>
 
-      {/* QUICKADD_SLOT */}
+   
+   <div className={cardCls}>
+  <QuickAdd onParsed={(draft) => setModal(draft)} />
+</div>
 
       <div className={`${cardCls} grid gap-3 sm:grid-cols-2 lg:grid-cols-6`}>
         <div className="relative lg:col-span-2">
