@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
 import Layout from './components/Layout';
+import Expenses from './pages/Expenses';
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
           <Route element={<Protected><Layout /></Protected>}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/expenses" element={<Expenses />} />
           </Route>
         </Routes>
       </BrowserRouter>
