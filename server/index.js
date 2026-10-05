@@ -1,13 +1,18 @@
 require('dotenv').config();
+if (process.env.DNS_FIX === 'true') {
+  require('node:dns').setServers(['8.8.8.8', '1.1.1.1']);
+}
 const express=require('express');
 const dns=require('node:dns');
 dns.setServers(['8.8.8.8','1.1.1.1']);
 const cors=require('cors');
 const mongoose=require('mongoose');
 const app=express();
+app.set('trust proxy', 1); // Render proxy ke peeche rate limit sahi IP dekhe
 const helmet=require('helmet');
 app.use(helmet());
-app.use(cors());
+const origins = (process.env.CLIENT_URL || 'http://localhost:5173').split(',').map((s) => s.trim());
+app.use(cors({ origin: origins }));
 app.use(express.json({ limit: '10kb' }));
 
 app.get('/api/health',(req,res)=>{
