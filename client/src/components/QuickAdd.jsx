@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { LoaderCircle, Sparkles } from 'lucide-react';
 import api from '../api';
 import { errMsg } from '../lib/utils';
 import { inputCls, btnPrimary, ErrorMsg } from './ui';
@@ -31,14 +31,18 @@ export default function QuickAdd({ onParsed }) {
         <div className="relative flex-1">
           <Sparkles size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400" />
           <input
-            className={`${inputCls} pl-9`}
+            className={`${inputCls} pl-9 transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/50`}
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder='Try: "pizza 250 yesterday" or "auto 80"'
             maxLength={200}
+            aria-label="Describe an expense"
           />
         </div>
-        <button disabled={busy} className={btnPrimary}>{busy ? 'Reading...' : 'Add with AI'}</button>
+        <button disabled={busy || !text.trim()} className={`${btnPrimary} inline-flex items-center justify-center gap-2`}>
+          {busy && <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />}
+          {busy ? 'Reading...' : 'Add with AI'}
+        </button>
       </div>
       <ErrorMsg>{error}</ErrorMsg>
     </form>

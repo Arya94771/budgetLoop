@@ -7,4 +7,11 @@ export const btnGhost =
 export const cardCls = 'rounded-2xl border border-slate-800 bg-slate-900 p-5';
 
 export const ErrorMsg = ({ children }) =>
-  children ? <p className="text-sm text-rose-400">{children}</p> : null;
+  children ? <p role="alert" className="text-sm text-rose-400">{children}</p> : null;
+
+export const SuccessMsg = ({ children }) =>
+  children ? (
+    <p role="status" aria-live="polite" className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+      {children}
+    </p>
+  ) : null;

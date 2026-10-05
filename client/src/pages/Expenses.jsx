@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Plus, Download, Pencil, Trash2, Search } from 'lucide-react';
 import api from '../api';
 import ExpenseModal from '../components/ExpenseModal';
+import QuickAdd from '../components/QuickAdd';
 import { CATEGORIES, CATEGORY_COLORS, inr, fmtDate, errMsg } from '../lib/utils';
-import { inputCls, btnPrimary, btnGhost, cardCls, ErrorMsg } from '../components/ui';
+import { inputCls, btnPrimary, btnGhost, cardCls, ErrorMsg, SuccessMsg } from '../components/ui';
 
 export default function Expenses() {
   const [filters, setFilters] = useState({ search: '', category: '', from: '', to: '', sort: '-date' });
@@ -12,6 +13,7 @@ export default function Expenses() {
   const [result, setResult] = useState({ data: [], total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [modal, setModal] = useState(null);
   const [reload, setReload] = useState(0);
 
@@ -37,7 +39,16 @@ export default function Expenses() {
       .get('/expenses', { params })
       .then((res) => {
         if (!cancelled) {
-          setResult(res.data);
+          const payload = res.data;
+          const total = Number(payload?.total);
+          const totalPages = Number(payload?.totalPages);
+          setResult({
+            data: Array.isArray(payload?.data)
+              ? payload.data.filter((expense) => expense && typeof expense === 'object')
+              : [],
+            total: Number.isSafeInteger(total) && total >= 0 ? total : 0,
+            totalPages: Number.isSafeInteger(totalPages) && totalPages > 0 ? totalPages : 1,
+          });
           setError('');
         }
       })
@@ -56,8 +67,11 @@ export default function Expenses() {
 
   const remove = async (id) => {
     if (!window.confirm('Delete this expense?')) return;
+    setError('');
+    setNotice('');
     try {
       await api.delete(`/expenses/${id}`);
+      setNotice('Expense deleted.');
       if (result.data.length === 1 && page > 1) setPage(page - 1);
       else setReload((r) => r + 1);
     } catch (err) {
@@ -73,7 +87,7 @@ export default function Expenses() {
       a.href = url;
       a.download = 'expenses.csv';
       a.click();
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
       setError(errMsg(err));
     }
@@ -122,6 +136,7 @@ export default function Expenses() {
       </div>
 
       <ErrorMsg>{error}</ErrorMsg>
+      <SuccessMsg>{notice}</SuccessMsg>
 
       <div className="divide-y divide-slate-800 rounded-2xl border border-slate-800 bg-slate-900">
         {loading ? (
@@ -165,7 +180,9 @@ export default function Expenses() {
           initial={modal}
           onClose={() => setModal(null)}
           onSaved={() => {
+            const wasEditing = Boolean(modal?._id);
             setModal(null);
+            setNotice(wasEditing ? 'Expense updated.' : 'Expense added.');
             setReload((r) => r + 1);
           }}
         />

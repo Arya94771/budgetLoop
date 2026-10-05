@@ -9,9 +9,12 @@ const recurringSchema = new mongoose.Schema(
     category: { type: String, enum: CATEGORIES, default: 'Other' },
     frequency: { type: String, enum: ['weekly', 'monthly'], required: true },
     nextDate: { type: Date, required: true },
+    scheduleDay: { type: Number, min: 1, max: 31 },
     active: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
+
+recurringSchema.index({ user: 1, active: 1, nextDate: 1 });
 
 module.exports = mongoose.model('Recurring', recurringSchema);

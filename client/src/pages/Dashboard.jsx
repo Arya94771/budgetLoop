@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { Plus } from 'lucide-react';
+import { CircleDollarSign, Plus } from 'lucide-react';
 import api from '../api';
 import ExpenseModal from '../components/ExpenseModal';
 import QuickAdd from '../components/QuickAdd';
 import BudgetBar from '../components/BudgetBar';
 import { CATEGORY_COLORS, inr, fmtDate, monthKey, monthLabel, errMsg } from '../lib/utils';
-import { inputCls, btnPrimary, cardCls, ErrorMsg } from '../components/ui';
+import { inputCls, btnPrimary, cardCls, ErrorMsg, SuccessMsg } from '../components/ui';
 
 const tip = { background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8 };
 
 const Stat = ({ label, value, sub }) => (
-  <div className={cardCls}>
+  <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 backdrop-blur-md">
     <p className="text-sm text-slate-400">{label}</p>
-    <p className="mt-1 text-2xl font-bold">{value}</p>
+    <p className="mt-1 text-2xl font-bold">{value ?? '—'}</p>
     {sub && <p className="mt-0.5 text-xs text-slate-500">{sub}</p>}
   </div>
 );
@@ -23,8 +23,9 @@ export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [budgets, setBudgets] = useState([]);
   const [recent, setRecent] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadedMonth, setLoadedMonth] = useState(null);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [modal, setModal] = useState(null);
   const [reload, setReload] = useState(0);
 
@@ -35,12 +36,11 @@ export default function Dashboard() {
       .then(({ data }) => {
         if (data.created) setReload((r) => r + 1);
       })
-      .catch(() => {});
+      .catch((err) => setError(errMsg(err)));
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     Promise.all([
       api.get('/summary', { params: { month } }),
       api.get('/budgets', { params: { month } }),
@@ -48,22 +48,38 @@ export default function Dashboard() {
     ])
       .then(([s, b, r]) => {
         if (cancelled) return;
-        setSummary(s.data);
-        setBudgets(b.data);
-        setRecent(r.data.data);
+        setSummary(s.data && typeof s.data === 'object' ? s.data : null);
+        setBudgets(Array.isArray(b.data) ? b.data.filter((item) => item && typeof item === 'object') : []);
+        setRecent(Array.isArray(r.data?.data)
+          ? r.data.data.filter((item) => item && typeof item === 'object')
+          : []);
         setError('');
       })
       .catch((err) => !cancelled && setError(errMsg(err)))
-      .finally(() => !cancelled && setLoading(false));
+      .finally(() => !cancelled && setLoadedMonth(month));
     return () => {
       cancelled = true;
     };
   }, [month, reload]);
 
-  const top = summary?.byCategory?.[0];
-  const count = summary ? summary.byCategory.reduce((s, c) => s + c.count, 0) : 0;
-  const alerts = budgets.filter((b) => b.status !== 'ok');
-  const trend = summary ? summary.trend.map((t) => ({ month: monthLabel(t.month), total: t.total })) : [];
+  const loading = loadedMonth !== month;
+  const byCategory = Array.isArray(summary?.byCategory)
+    ? summary.byCategory.filter((item) => item && typeof item === 'object')
+    : [];
+  const top = byCategory[0];
+  const count = byCategory.reduce((sum, category) => {
+    const value = Number(category.count);
+    return sum + (Number.isFinite(value) && value > 0 ? value : 0);
+  }, 0);
+  const totalValue = Number(summary?.total);
+  const total = Number.isFinite(totalValue) ? totalValue : 0;
+  const alerts = budgets.filter((budget) => budget?.status && budget.status !== 'ok');
+  const trend = Array.isArray(summary?.trend)
+    ? summary.trend.filter((item) => item && typeof item === 'object').map((item) => ({
+      month: monthLabel(item?.month),
+      total: Number.isFinite(Number(item?.total)) ? Number(item.total) : 0,
+    })).filter((item) => item.month)
+    : [];
 
   return (
     <div className="space-y-5">
@@ -88,21 +104,33 @@ export default function Dashboard() {
       </div>
 
       <ErrorMsg>{error}</ErrorMsg>
+      <SuccessMsg>{notice}</SuccessMsg>
 
       {loading && !summary ? (
         <p className="text-slate-400">Loading...</p>
       ) : (
-        summary && (
           <>
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              <Stat label="Spent this month" value={inr(summary.total)} />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Stat label="Spent this month" value={inr(total)} />
               <Stat label="Top category" value={top ? top.category : '-'} sub={top ? inr(top.total) : ''} />
               <Stat label="Transactions" value={count} />
               <Stat label="Budget alerts" value={alerts.length} sub={alerts.length ? 'Check budgets below' : 'All good'} />
             </div>
 
-            {summary.total === 0 ? (
-              <div className={`${cardCls} text-center text-slate-400`}>No expenses in this month yet. Add one above.</div>
+            {total === 0 ? (
+              <div className={`${cardCls} flex flex-col items-center gap-3 py-10 text-center`}>
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-300">
+                  <CircleDollarSign size={28} aria-hidden="true" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-slate-100">No expenses this month yet</h2>
+                  <p className="mt-1 text-sm text-slate-400">Add your first expense to see your spending here.</p>
+                </div>
+                <button onClick={() => setModal({})} className={btnPrimary}>
+                  <Plus size={16} className="mr-1 inline" />
+                  Add an expense
+                </button>
+              </div>
             ) : (
               <div className="grid gap-4 lg:grid-cols-2">
                 <div className={cardCls}>
@@ -111,9 +139,9 @@ export default function Dashboard() {
                     <div className="h-52 w-full sm:w-1/2">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                          <Pie data={summary.byCategory} dataKey="total" nameKey="category" innerRadius={50} outerRadius={80} paddingAngle={2}>
-                            {summary.byCategory.map((c) => (
-                              <Cell key={c.category} fill={CATEGORY_COLORS[c.category]} stroke="none" />
+                          <Pie data={byCategory} dataKey="total" nameKey="category" innerRadius={50} outerRadius={80} paddingAngle={2}>
+                            {byCategory.map((category) => (
+                              <Cell key={category.category} fill={CATEGORY_COLORS[category.category]} stroke="none" />
                             ))}
                           </Pie>
                           <Tooltip formatter={(v) => inr(v)} contentStyle={tip} itemStyle={{ color: '#e2e8f0' }} />
@@ -121,13 +149,13 @@ export default function Dashboard() {
                       </ResponsiveContainer>
                     </div>
                     <ul className="w-full space-y-1.5 text-sm sm:w-1/2">
-                      {summary.byCategory.map((c) => (
-                        <li key={c.category} className="flex items-center justify-between">
+                      {byCategory.map((category) => (
+                        <li key={category.category} className="flex items-center justify-between">
                           <span className="flex items-center gap-2">
-                            <span className="h-2.5 w-2.5 rounded-full" style={{ background: CATEGORY_COLORS[c.category] }} />
-                            {c.category}
+                            <span className="h-2.5 w-2.5 rounded-full" style={{ background: CATEGORY_COLORS[category.category] }} />
+                            {category.category}
                           </span>
-                          <span className="text-slate-400">{inr(c.total)}</span>
+                          <span className="text-slate-400">{inr(category.total)}</span>
                         </li>
                       ))}
                     </ul>
@@ -187,7 +215,6 @@ export default function Dashboard() {
               </div>
             </div>
           </>
-        )
       )}
 
       {modal && (
@@ -196,6 +223,7 @@ export default function Dashboard() {
           onClose={() => setModal(null)}
           onSaved={() => {
             setModal(null);
+            setNotice('Expense saved successfully.');
             setReload((r) => r + 1);
           }}
         />
