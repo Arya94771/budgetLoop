@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Budget = require('../models/budget');
+const Budget = require('../models/Budget');
 const Expense = require('../models/Expense');
 const { CATEGORIES } = require('../utils/constants');
 const { isPlainObject, parseMoney } = require('../utils/validation');
