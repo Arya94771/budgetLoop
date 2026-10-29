@@ -49,7 +49,7 @@ test('parses JSON wrapped in markdown and uses the supported Flash model', async
   });
 
   const response = await invoke('lunch 125.50');
-  assert.equal(requestedModel, 'gemini-2.5-flash');
+  assert.equal(requestedModel, 'gemini-3.1-flash-lite');
   assert.equal(response.statusCode, 200);
   assert.equal(response.body.title, 'Lunch');
   assert.equal(response.body.amount, 125.5);
@@ -60,10 +60,10 @@ test('returns a validation response for malformed model JSON', async () => {
 
   const response = await invoke('lunch');
   assert.equal(response.statusCode, 422);
-  assert.equal(response.body.success, false);
+  assert.equal(response.body.message, 'Could not find a title and amount');
 });
 
-test('returns the structured busy response when the provider request fails', async () => {
+test('falls back to the basic parser when the provider request fails', async () => {
   const originalError = console.error;
   console.error = () => {};
   generateContent = async () => {
@@ -71,19 +71,13 @@ test('returns the structured busy response when the provider request fails', asy
   };
 
   try {
-    const response = await invoke('lunch');
-    assert.equal(response.statusCode, 503);
-    assert.deepEqual(response.body, {
-      success: false,
-      message: 'AI service is currently busy. Please try again in a moment.',
-    });
+    const ok = await invoke('lunch 125');
+    assert.equal(ok.statusCode, 200);
+    assert.equal(ok.body.amount, 125);
+
+    const bad = await invoke('lunch');
+    assert.equal(bad.statusCode, 422);
   } finally {
     console.error = originalError;
   }
-});
-
-test.after(() => {
-  if (originalGenai) require.cache[genaiPath] = originalGenai;
-  else delete require.cache[genaiPath];
-  delete require.cache[require.resolve('../controllers/aiController')];
 });

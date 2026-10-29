@@ -78,7 +78,13 @@ Amount is in INR. If no date is mentioned, use today. The Hindi word "kal" means
 Text: """${text}"""`;
 
       const response = await generateWithFallback(ai, prompt);
-      const out = JSON.parse(response.text);
+
+      // Kabhi kabhi model JSON ko ```json ... ``` me wrap kar deta hai, pehle wo hatao
+      const raw = String(response.text || '')
+        .replace(/^```(?:json)?\s*|\s*```$/g, '')
+        .trim();
+      const out = JSON.parse(raw);
+
       const amount = Number(out.amount);
       if (out.title && amount > 0) {
         const date = new Date(out.date);
