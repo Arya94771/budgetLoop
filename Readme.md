@@ -38,3 +38,5 @@ Full-stack expense tracker with budgets, recurring expenses, analytics and AI-po
 
 ## Screenshots
 Coming soon.
+
+![CI](https://github.com/Arya94771/budgetLoop/actions/workflows/ci.yml/badge.svg)
